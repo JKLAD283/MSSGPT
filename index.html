@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <title>MSSGPT - Sohbet</title>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; margin-bottom: 120px; background-color: #f9f9f9; }
+        .header-bar { padding: 15px; background: white; border-bottom: 1px solid #ddd; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        #chat-flow { padding: 20px; max-width: 800px; margin: 0 auto; display: flex; flex-direction: column; }
+        .message-bubble { 
+            padding: 12px 16px; 
+            border-radius: 15px; 
+            margin-bottom: 15px; 
+            line-height: 1.5; 
+            max-width: 80%; 
+            word-wrap: break-word;
+            white-space: pre-wrap; /* Şiirlerin alt alta düzgün görünmesi için kritik! */
+        }
+        .user-msg { background-color: #007bff; color: white; align-self: flex-end; border-bottom-right-radius: 2px; }
+        .gpt-msg { background-color: #e9e9eb; color: #333; align-self: flex-start; border-bottom-left-radius: 2px; }
+        .input-konteynir { position: fixed; bottom: 0; left: 0; width: 100%; display: flex; align-items: center; background: white; padding: 15px; border-top: 1px solid #ccc; box-sizing: border-box; }
+        textarea { flex-grow: 1; resize: none; padding: 12px; border-radius: 10px; border: 1px solid #ddd; margin-right: 10px; font-size: 16px; outline: none; }
+        .send-img { width: 45px; height: 45px; cursor: pointer; transition: 0.1s; }
+        .send-img:hover { transform: scale(1.1); }
+        button { padding: 8px 12px; margin: 5px; cursor: pointer; border: 1px solid #ddd; border-radius: 5px; background: white; font-size: 14px; }
+        button:hover { background: #f0f0f0; }
+        .shortcuts { margin-top: 10px; overflow-x: auto; white-space: nowrap; }
+    </style>
+</head>
+<body>
+
+    <div class="header-bar">
+        <button onclick="window.location.href='chats.html'">☰</button>
+        <h2 style="margin: 10px 0 5px 0;">MSSGPT</h2>
+        <div class="shortcuts">
+            <button onclick="odaklan()">🖼 Resim Oluştur</button>
+            <button onclick="odaklan()">📄 Ne istiyorsanız yazın</button>
+            <button onclick="odaklan()">📚 Öğrenmeme yardım et</button>
+            <button onclick="odaklan()">💻 Kod Yazmama yardım et</button>
+            <button onclick="odaklan()">✨️ Günüme enerji kat</button>
+        </div>
+    </div>
+
+    <div id="chat-flow"></div>
+
+    <div class="input-konteynir">
+        <textarea id="message" rows="2" placeholder="Mesajınızı buraya yazın..."></textarea>
+        <img src="send.png" alt="Gönder" class="send-img" onclick="gonder()">
+    </div>
+
+<script>
+    const urlParams = new URLSearchParams(window.location.search);
+    let chatId = urlParams.get('id');
+
+    if (!chatId) {
+        chatId = "chat_" + Date.now();
+        window.history.replaceState(null, "", "?id=" + chatId);
+    }
+
+    window.onload = function() {
+        const kayitliMesajlar = localStorage.getItem(chatId);
+        if (kayitliMesajlar) {
+            const mesajlar = JSON.parse(kayitliMesajlar);
+            mesajlar.forEach(m => {
+                const stil = m.sender === "Siz" ? "user-msg" : "gpt-msg";
+                mesajEkranaBas(m.sender, m.text, stil);
+            });
+        }
+    };
+
+    async function gonder() {
+    const messageInput = document.getElementById('message');
+    const userText = messageInput.value.trim();
+    if (userText === "") return;
+
+    mesajEkranaBas("Siz", userText, "user-msg");
+    mesajKaydet("Siz", userText);
+    messageInput.value = "";
+
+    try {
+        // Portun 5000 olduğundan emin ol (Python varsayılanı)
+        const response = await fetch('http://192.168.1.44:5000/ask', {
+            method: 'POST',
+            headers: { 
+                'Content-Type': 'application/json',
+                'Authorization': 'mss-ai-d5ff770ba632dd7a' // Yeni anahtarın burada!
+            },
+            body: JSON.stringify({ soru: userText }) 
+        });
+        
+        const data = await response.json();
+        const gptReply = data.cevap || data.hata || "Cevap alınamadı.";
+        
+        mesajEkranaBas("MSSGPT", gptReply, "gpt-msg");
+        mesajKaydet("MSSGPT", gptReply);
+    } catch (error) {
+        mesajEkranaBas("Sistem", "Hata: Sunucuya bağlanılamadı. Python apikey.py'nin çalıştığından emin ol.", "gpt-msg");
+    }
+}
+
+
+    function mesajEkranaBas(sender, text, stil) {
+        const chatFlow = document.getElementById('chat-flow');
+        const div = document.createElement('div');
+        div.className = `message-bubble ${stil}`;
+        div.innerHTML = `<b>${sender}:</b><br>${text}`;
+        chatFlow.appendChild(div);
+        window.scrollTo(0, document.body.scrollHeight);
+    }
+
+    function mesajKaydet(sender, text) {
+        let mesajlar = JSON.parse(localStorage.getItem(chatId)) || [];
+        mesajlar.push({ sender, text });
+        localStorage.setItem(chatId, JSON.stringify(mesajlar));
+    }
+
+    function odaklan() { document.getElementById('message').focus(); }
+
+    document.getElementById('message').addEventListener('keypress', (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); gonder(); }
+    });
+</script>
+</body>
+</html>

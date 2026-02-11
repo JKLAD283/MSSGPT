@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Sohbetlerim - MSSGPT</title>
+    <meta charset="UTF-8">
+    <style>
+        body { font-family: sans-serif; padding: 20px; background-color: #f4f4f9; color: #333; }
+        .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #ddd; padding-bottom: 10px; }
+        .chat-list { margin-top: 20px; }
+        .chat-item { 
+            background: white; padding: 15px; margin-bottom: 10px; 
+            border-radius: 8px; display: flex; justify-content: space-between;
+            align-items: center; border: 1px solid #ddd; cursor: pointer;
+            transition: 0.2s;
+        }
+        .chat-item:hover { background-color: #eef2f7; transform: translateY(-2px); box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+        .delete-btn { background: #ff4d4d; color: white; border: none; padding: 8px 12px; border-radius: 4px; cursor: pointer; }
+        .delete-btn:hover { background: #cc0000; }
+        .new-chat-btn { background: #28a745; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h1>Geçmiş Sohbetler</h1>
+        <button class="new-chat-btn" onclick="yeniSohbet()">+ Yeni Sohbet</button>
+    </div>
+
+    <div id="chat-list-container" class="chat-list">
+        </div>
+
+    <script>
+        function yeniSohbet() {
+            // Yeni sohbet için ID oluştur ve index.html'e yönlendir
+            const yeniId = "chat_" + Date.now();
+            window.location.href = `index.html?id=${yeniId}`;
+        }
+
+        function sohbetleriYukle() {
+            const container = document.getElementById('chat-list-container');
+            container.innerHTML = "";
+            let sohbetVarMi = false;
+            
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                if (key.startsWith("chat_")) {
+                    sohbetVarMi = true;
+                    const chatData = JSON.parse(localStorage.getItem(key));
+                    // İlk mesajı başlık yap, mesaj yoksa "Yeni Sohbet" yaz
+                    const baslik = chatData.length > 0 ? chatData[0].text.substring(0, 35) + "..." : "Boş Sohbet";
+
+                    const item = document.createElement('div');
+                    item.className = 'chat-item';
+                    item.onclick = () => window.location.href = `index.html?id=${key}`;
+                    item.innerHTML = `
+                        <span>${baslik}</span>
+                        <button class="delete-btn" onclick="sohbetiSil(event, '${key}')">Sil</button>
+                    `;
+                    container.appendChild(item);
+                }
+            }
+
+            if(!sohbetVarMi) {
+                container.innerHTML = "<p>Henüz bir sohbet geçmişi yok.</p>";
+            }
+        }
+
+        function sohbetiSil(event, id) {
+            event.stopPropagation(); 
+            if(confirm("Bu sohbeti silmek istediğine emin misin?")) {
+                localStorage.removeItem(id);
+                sohbetleriYukle();
+            }
+        }
+
+        window.onload = sohbetleriYukle;
+    </script>
+</body>
+</html>
