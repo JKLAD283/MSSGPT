@@ -79,11 +79,11 @@
 
     try {
         // Portun 5000 olduğundan emin ol (Python varsayılanı)
-        const response = await fetch('https://mssgpt.loca.lt', {
+        const response = await fetch('https://mssgpt.loca.lt/generate', {
             method: 'POST',
             headers: { 
                 'Content-Type': 'application/json',
-                'Authorization': 'mss-ai-d5ff770ba632dd7a' // Yeni anahtarın burada!
+                'Authorization': 'Mss-ai-761dd93eeeb759c9' // Yeni anahtarın burada!
             },
             body: JSON.stringify({ soru: userText }) 
         });
@@ -123,4 +123,5 @@
 </body>
 
 </html>
+
 
