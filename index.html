@@ -14,7 +14,7 @@
             line-height: 1.5; 
             max-width: 80%; 
             word-wrap: break-word;
-            white-space: pre-wrap; /* Şiirlerin alt alta düzgün görünmesi için kritik! */
+            white-space: pre-wrap; 
         }
         .user-msg { background-color: #007bff; color: white; align-self: flex-end; border-bottom-right-radius: 2px; }
         .gpt-msg { background-color: #e9e9eb; color: #333; align-self: flex-start; border-bottom-left-radius: 2px; }
@@ -57,6 +57,9 @@
         window.history.replaceState(null, "", "?id=" + chatId);
     }
 
+    // API Anahtarın burada tanımlı
+    const MY_API_KEY = "ANyDaLbAg-193a0dd3-abc8080";
+
     window.onload = function() {
         const kayitliMesajlar = localStorage.getItem(chatId);
         if (kayitliMesajlar) {
@@ -69,35 +72,38 @@
     };
 
     async function gonder() {
-    const messageInput = document.getElementById('message');
-    const userText = messageInput.value.trim();
-    if (userText === "") return;
+        const messageInput = document.getElementById('message');
+        const userText = messageInput.value.trim();
+        if (userText === "") return;
 
-    mesajEkranaBas("Siz", userText, "user-msg");
-    mesajKaydet("Siz", userText);
-    messageInput.value = "";
+        mesajEkranaBas("Siz", userText, "user-msg");
+        mesajKaydet("Siz", userText);
+        messageInput.value = "";
 
-    try {
-        // Portun 5000 olduğundan emin ol (Python varsayılanı)
-        const response = await fetch('http://192.168.1.44:8888', {
-            method: 'POST',
-            headers: { 
-                'Content-Type': 'application/json',
-                'Authorization': 'Mss-ai-761dd93eeeb759c9' // Yeni anahtarın burada!
-            },
-            body: JSON.stringify({ soru: userText }) 
-        });
-        
-        const data = await response.json();
-        const gptReply = data.cevap || data.hata || "Cevap alınamadı.";
-        
-        mesajEkranaBas("MSSGPT", gptReply, "gpt-msg");
-        mesajKaydet("MSSGPT", gptReply);
-    } catch (error) {
-        mesajEkranaBas("Sistem", "Hata: Sunucuya bağlanılamadı. Python apikey.py'nin çalıştığından emin ol.", "gpt-msg");
+        try {
+            // Python sunucunun IP adresi ve portu (generate yolu ile)
+            const response = await fetch('http://192.168.1.44:8888/generate', {
+                method: 'POST',
+                headers: { 
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ 
+                    api_key: MY_API_KEY, // Python'un beklediği api_key
+                    prompt: userText      // Python'un beklediği prompt
+                }) 
+            });
+            
+            const data = await response.json();
+            // Python kodunda cevap 'answer' anahtarında geliyor
+            const gptReply = data.answer || "Cevap alınamadı.";
+            
+            mesajEkranaBas("MSSGPT", gptReply, "gpt-msg");
+            mesajKaydet("MSSGPT", gptReply);
+        } catch (error) {
+            mesajEkranaBas("Sistem", "Hata: Sunucuya bağlanılamadı. Lütfen sunucunun açık olduğundan emin olun.", "gpt-msg");
+            console.error("Hata detayı:", error);
+        }
     }
-}
-
 
     function mesajEkranaBas(sender, text, stil) {
         const chatFlow = document.getElementById('chat-flow');
@@ -121,8 +127,4 @@
     });
 </script>
 </body>
-
 </html>
-
-
-
